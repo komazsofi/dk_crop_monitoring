@@ -4,7 +4,9 @@ library(dplyr)
 library(ggplot2)
 library(tidyverse)
 
-setwd("O:/Nat_Sustain-proj/_user/ZsofiaKoma_au700510/Landsat_crop/exploration_analysis/important_crops/")
+library(randomcoloR)
+
+setwd("O:/Nat_Sustain-proj/_user/ZsofiaKoma_au700510/Landsat_crop/exploration_analysis_2/AggrTrainingClasses/")
 
 # import
 
@@ -22,53 +24,45 @@ allcsv_df_sublt05 <- allcsv_df[grep("LT05", allcsv_df$id), ]
 
 # based on ID mine information
 
-allcsv_df_sublt05$year=substring(allcsv_df_sublt05$id,21,24)
-allcsv_df_sublt05$month=substring(allcsv_df_sublt05$id,25,26)
-allcsv_df_sublt05$day=substring(allcsv_df_sublt05$id,27,28)
+allcsv_df_sublt05$year=substr(allcsv_df_sublt05$id,13,16)
+allcsv_df_sublt05$month=substring(allcsv_df_sublt05$id,17,18)
+allcsv_df_sublt05$day=substring(allcsv_df_sublt05$id,19,20)
 
-allcsv_df_sublt05$date=substring(allcsv_df_sublt05$id,21,28)
+allcsv_df_sublt05$date=substring(allcsv_df_sublt05$id,13,20)
 allcsv_df_sublt05$date_c=as.Date(allcsv_df_sublt05$date,"%Y%m%d")
 allcsv_df_sublt05$doy=as.numeric(format(allcsv_df_sublt05$date_c, format="%j"))
 
 allcsv_df_sublt05_2011=allcsv_df_sublt05[allcsv_df_sublt05$year==2011,]
-allcsv_df_sublt05_2011=allcsv_df_sublt05_2011[is.na(allcsv_df_sublt05_2011$NDVI)==FALSE,]
+allcsv_df_sublt05_2011=allcsv_df_sublt05_2011[is.na(allcsv_df_sublt05_2011$SR_B1)==FALSE,]
+
+write.csv(allcsv_df_sublt05_2011,"allcsv_df_sublt05_2011.csv")
+
+# calculate indices
+
+allcsv_df_sublt05_2011$NDVI=(allcsv_df_sublt05_2011$SR_B4-allcsv_df_sublt05_2011$SR_B3)/(allcsv_df_sublt05_2011$SR_B4+allcsv_df_sublt05_2011$SR_B3)
 
 # make per class
 
-allcsv_df_sublt05_2011_ww=allcsv_df_sublt05_2011[allcsv_df_sublt05_2011$class=="Winterwheat",]
-allcsv_df_sublt05_2011_sm=allcsv_df_sublt05_2011[allcsv_df_sublt05_2011$class=="silomaize",]
-allcsv_df_sublt05_2011_grass=allcsv_df_sublt05_2011[allcsv_df_sublt05_2011$class=="permanent grass with normal yield",]
+classes=unique(allcsv_df_sublt05_2011$class)
+colors=distinctColorPalette(length(classes))
 
-allcsv_df_sublt05_2011_ndvistatww=allcsv_df_sublt05_2011_ww %>% 
-  group_by(month = lubridate::floor_date(allcsv_df_sublt05_2011_ww$date_c, 'month')) %>%
-  dplyr::summarize(med_NDVI = median(NDVI, na.rm = TRUE),sd_NDVI = sd(NDVI, na.rm = TRUE))
-
-allcsv_df_sublt05_2011_ndvistatsm=allcsv_df_sublt05_2011_sm %>% 
-  group_by(month = lubridate::floor_date(allcsv_df_sublt05_2011_sm$date_c, 'month')) %>%
-  dplyr::summarize(med_NDVI = median(NDVI, na.rm = TRUE),sd_NDVI = sd(NDVI, na.rm = TRUE))
-
-allcsv_df_sublt05_2011_ndvistatgrass=allcsv_df_sublt05_2011_grass %>% 
-  group_by(month = lubridate::floor_date(allcsv_df_sublt05_2011_grass$date_c, 'month')) %>%
-  dplyr::summarize(med_NDVI = median(NDVI, na.rm = TRUE),sd_NDVI = sd(NDVI, na.rm = TRUE))
-
-ggplot(allcsv_df_sublt05_2011_ndvistatww,aes(x=month,y=med_NDVI))+
-  geom_point(color="goldenrod4",size=3)+geom_line(color="goldenrod4",size=3)+theme_bw(base_size = 25)+
-  geom_ribbon(aes(ymin=med_NDVI-sd_NDVI, ymax=med_NDVI+sd_NDVI), fill = "grey70",alpha = 0.25)+
-  #geom_errorbar(aes(ymin=mean_NDVI-sd_NDVI, ymax=mean_NDVI+sd_NDVI),color="goldenrod4",size=1)+
-  xlab("Months in the year")
-
-ggplot(allcsv_df_sublt05_2011_ndvistatsm,aes(x=month,y=med_NDVI))+
-  geom_point(color="goldenrod2",size=3)+geom_line(color="goldenrod2",size=3)+theme_bw(base_size = 25)+
-  geom_ribbon(aes(ymin=med_NDVI-sd_NDVI, ymax=med_NDVI+sd_NDVI), fill = "grey70",alpha = 0.25)+
-  #geom_errorbar(aes(ymin=mean_NDVI-sd_NDVI, ymax=mean_NDVI+sd_NDVI),color="goldenrod2",size=1)+
-  xlab("Months in the year")
-
-ggplot(allcsv_df_sublt05_2011_ndvistatgrass,aes(x=month,y=med_NDVI))+
-  geom_point(color="darkolivegreen4",size=3)+geom_line(color="darkolivegreen4",size=3)+theme_bw(base_size = 25)+
-  geom_ribbon(aes(ymin=med_NDVI-sd_NDVI, ymax=med_NDVI+sd_NDVI), fill = "grey70",alpha = 0.25)+
-  #geom_errorbar(aes(ymin=mean_NDVI-sd_NDVI, ymax=mean_NDVI+sd_NDVI),color="darkolivegreen4",size=1)+
-  xlab("Months in the year")
-
+for (i in 1:length(classes)) {
+  
+  allcsv_df_sublt05_2011_sel=allcsv_df_sublt05_2011[allcsv_df_sublt05_2011$class==classes[i],]
+  
+  allcsv_df_sublt05_2011_ndvistat_sel=allcsv_df_sublt05_2011_sel %>% 
+    group_by(month = lubridate::floor_date(allcsv_df_sublt05_2011_sel$date_c, 'month')) %>%
+    dplyr::summarize(med_NDVI = median(NDVI, na.rm = TRUE),sd_NDVI = sd(NDVI, na.rm = TRUE))
+  
+  ggplot(allcsv_df_sublt05_2011_ndvistat_sel,aes(x=month,y=med_NDVI))+
+    geom_point(color=colors[i],size=3)+geom_line(color=colors[i],size=3)+theme_bw(base_size = 25)+
+    geom_ribbon(aes(ymin=med_NDVI-sd_NDVI, ymax=med_NDVI+sd_NDVI), fill = "grey70",alpha = 0.25)+
+    #geom_errorbar(aes(ymin=mean_NDVI-sd_NDVI, ymax=mean_NDVI+sd_NDVI),color="goldenrod4",size=1)+
+    xlab("Months in the year")+ylim(c(0,1))
+  
+  ggsave(paste0("O:/Nat_Sustain-proj/_user/ZsofiaKoma_au700510/Landsat_crop/exploration_analysis_2/",classes[i],".png"))
+  
+}
 
 # make stat per month across all
 
@@ -80,8 +74,7 @@ allcsv_df_sublt05_2011_ndvistat=allcsv_df_sublt05_2011 %>%
 
 ggplot(allcsv_df_sublt05_2011_ndvistat,aes(x=month,y=med_NDVI,color=class))+
   geom_point(size=3)+geom_line(size=3)+theme_bw(base_size = 25)+
-  xlab("Months in the year")+
-  scale_color_manual(values=c("darkolivegreen4", "goldenrod2", "goldenrod4"),labels = c("Perm, Grass", "Silo Maize", "Winter weat"))
+  xlab("Months in the year")
 
 # one particular selected center
 
